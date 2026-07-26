@@ -29,7 +29,7 @@ dev = [
     "pytest-cov>=5,<8",
     "ruff>=0.8,<0.16",
     "mypy>=1.13,<2",
-    "django-stubs>=5.1,<6",
+    "django-stubs>=5.1,<7",
     "freezegun>=1.5,<2",
 ]
 
