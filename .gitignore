@@ -1,0 +1,42 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Django
+staticfiles/
+db.sqlite3
+
+# Backups (may contain seller data)
+backups/
+
+# Playwright / browser artifacts
+playwright-report/
+test-results/
+*.trace.zip
+
+# macOS
+.DS_Store
+
+# Legacy artifacts of a previous, unrelated task in this folder.
+# They are intentionally kept on disk but excluded from this repository.
+build/
+qa/
+outputs/
+work/
+deliverables/
