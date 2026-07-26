@@ -45,7 +45,10 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=True)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31536000
+# По ТЗ §13.16 includeSubDomains/preload намеренно выключены: приложение живет
+# на поддомене onrender.com, которым владелец не управляет целиком.
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
 
 CONTENT_SECURITY_POLICY["DIRECTIVES"]["upgrade-insecure-requests"] = True  # noqa: F405

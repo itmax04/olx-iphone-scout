@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: iphone_scout
+          POSTGRES_USER: iphone_scout
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iphone_scout"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://iphone_scout:ci_only_password@localhost:5432/iphone_scout
+      APP_ENV: test
+      MONITOR_ENABLED: "false"
+      AI_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install "uv>=0.5,<1"
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Local CI contract (format, lint, types, migrations, tests, checks)
+        run: |
+          source .venv/bin/activate
+          ./scripts/ci.sh
+
+      - name: Secret scan (gitleaks, история и рабочее дерево)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build -t olx-iphone-scout:ci .
+
+      - name: Verify WhiteNoise manifest inside image
+        run: docker run --rm --entrypoint sh olx-iphone-scout:ci -c "test -f staticfiles/staticfiles.json && echo manifest OK"
