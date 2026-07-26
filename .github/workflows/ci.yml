@@ -48,7 +48,7 @@ jobs:
           ./scripts/ci.sh
 
       - name: Secret scan (gitleaks, история и рабочее дерево)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
