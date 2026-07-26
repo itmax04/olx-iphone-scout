@@ -1,0 +1,11 @@
+# Gitleaks config. Локальный .env — единственное разрешенное место секретов
+# (не коммитится, см. .gitignore); dir-скан не должен на него срабатывать.
+# История git проверяется без этого исключения: .env в ней отсутствует.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local runtime secrets file (never committed)"
+paths = [
+    '''(^|/)\.env$''',
+]

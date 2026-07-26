@@ -13,15 +13,15 @@ fi
 GITLEAKS_IMAGE="zricethezav/gitleaks:v8.30.1"
 
 run_with_binary() {
-    gitleaks git --redact --no-banner "$PROJECT_ROOT"
-    gitleaks dir --redact --no-banner "$PROJECT_ROOT"
+    gitleaks git --redact --no-banner --config "$PROJECT_ROOT/.gitleaks.toml" "$PROJECT_ROOT"
+    gitleaks dir --redact --no-banner --config "$PROJECT_ROOT/.gitleaks.toml" "$PROJECT_ROOT"
 }
 
 run_with_docker() {
     docker run --rm -v "$PROJECT_ROOT:/repo:ro" "$GITLEAKS_IMAGE" \
-        git --redact --no-banner /repo
+        git --redact --no-banner --config /repo/.gitleaks.toml /repo
     docker run --rm -v "$PROJECT_ROOT:/repo:ro" "$GITLEAKS_IMAGE" \
-        dir --redact --no-banner /repo
+        dir --redact --no-banner --config /repo/.gitleaks.toml /repo
 }
 
 if command -v gitleaks >/dev/null 2>&1; then
