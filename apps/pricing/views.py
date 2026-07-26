@@ -49,7 +49,7 @@ def market_rule_create(request: HttpRequest) -> HttpResponse:
     guard = _admin_or_redirect(request)
     if guard:
         return guard
-    initial = {"checked_at": timezone.now()}
+    initial: dict[str, object] = {"checked_at": timezone.now()}
     copy_id = request.GET.get("copy")
     if copy_id:
         source = MarketPriceRule.objects.filter(pk=copy_id).first()

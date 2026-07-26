@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 
 class PlaywrightOlxSource:
     def __init__(self) -> None:
-        self._playwright = None
-        self._browser = None
+        from typing import Any
+
+        self._playwright: Any = None
+        self._browser: Any = None
         self._scan_count = 0
 
     # -- lifecycle ---------------------------------------------------------

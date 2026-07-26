@@ -282,9 +282,9 @@ def analyze_listing(
         cached = find_cached_success(listing, AiTier.FAST, 0)
         if cached is not None:
             deep_cached = find_cached_success(listing, AiTier.DEEP, 0)
-            final = deep_cached or cached
-            _apply_to_listing(listing, final)
-            return final
+            cached_final = deep_cached or cached
+            _apply_to_listing(listing, cached_final)
+            return cached_final
 
     if client is None:
         from apps.analysis.client import get_ai_client
@@ -301,6 +301,7 @@ def analyze_listing(
 
     fast_result: AiResultV1 | None = None
     fast_analysis: AiAnalysis | None = None
+    final: AiAnalysis | None = None
     fast_schema_failed = False
     try:
         fast_analysis = _run_tier(

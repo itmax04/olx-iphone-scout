@@ -133,7 +133,7 @@ class SearchProfileForm(forms.ModelForm):
         return [int(v) for v in self.cleaned_data["target_storage_gb"]]
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         min_price = cleaned.get("min_price_uah")
         max_price = cleaned.get("max_purchase_price_uah")
         if min_price is not None and max_price is not None and max_price <= min_price:

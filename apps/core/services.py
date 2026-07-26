@@ -36,10 +36,10 @@ def record_audit(
     changes: dict[str, Any] | None = None,
     request: HttpRequest | None = None,
 ) -> AuditEvent:
-    actor_obj = actor if getattr(actor, "is_authenticated", False) else None
+    actor_obj: object = actor if getattr(actor, "is_authenticated", False) else None
     request_id = getattr(request, "request_id", None) if request is not None else None
     return AuditEvent.objects.create(
-        actor=actor_obj,
+        actor=actor_obj,  # type: ignore[misc]
         action=action,
         target_type=target_type,
         target_id=str(target_id) if target_id else "",
@@ -55,7 +55,7 @@ def enforce_rate_limit(action: str, limit_key: str, actor: object = None) -> Non
     since = timezone.now() - timedelta(seconds=window_seconds)
     queryset = AuditEvent.objects.filter(action=action, created_at__gte=since)
     if getattr(actor, "is_authenticated", False):
-        queryset = queryset.filter(actor=actor)
+        queryset = queryset.filter(actor=actor)  # type: ignore[misc]
     if queryset.count() >= limit:
         raise RateLimitedError(
             "Слишком много одинаковых действий. Подождите немного и повторите.",

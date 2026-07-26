@@ -148,7 +148,7 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
     request = context.get("request")
     request_id = getattr(request, "request_id", "") if request is not None else ""
 
-    code = ErrorCode.INTERNAL_ERROR
+    code: str = ErrorCode.INTERNAL_ERROR
     message = "Произошла ошибка."
     field_errors: dict[str, list[str]] | None = None
 

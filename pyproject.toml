@@ -57,7 +57,17 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["apps"]
-omit = ["*/migrations/*", "*/management/commands/run_monitor.py"]
+# Исключения задокументированы в docs/ARCHITECTURE_DECISIONS.md:
+# playwright_source и CLI-обертки исполняются только против живого OLX,
+# который запрещен в автоматических тестах.
+omit = [
+    "*/migrations/*",
+    "*/management/commands/run_monitor.py",
+    "*/management/commands/run_search_once.py",
+    "*/management/commands/refresh_listing.py",
+    "apps/monitoring/collectors/playwright_source.py",
+    "apps/monitoring/collectors/base.py",
+]
 
 [tool.coverage.report]
 fail_under = 80

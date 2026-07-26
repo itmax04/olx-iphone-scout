@@ -22,6 +22,7 @@ class Command(BaseCommand):
         except (Listing.DoesNotExist, ValueError, Exception) as exc:
             raise CommandError(f"Listing not found: {exc}")
 
+        source: object
         fixture = options.get("fixture") or ""
         if fixture:
             from apps.monitoring.collectors.fixture_source import FixtureOlxSource

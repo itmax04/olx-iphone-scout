@@ -22,6 +22,7 @@ class Command(BaseCommand):
         except (SearchProfile.DoesNotExist, ValueError, Exception) as exc:
             raise CommandError(f"Profile not found: {exc}")
 
+        source: object
         fixture = options.get("fixture") or ""
         if fixture:
             from apps.monitoring.collectors.fixture_source import FixtureOlxSource

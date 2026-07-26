@@ -266,10 +266,12 @@ def _economics_decision(
     if price_ok and profit_ok and roi_ok:
         return EvaluationDecision.CANDIDATE, ["PROFIT_THRESHOLD_MET", "ROI_THRESHOLD_MET"]
 
-    # Borderline: every threshold within 10%, none catastrophically missed.
+    # Borderline (U-24, «между порогами»): цена не выше профильного потолка и
+    # каждый экономический порог промахнут не более чем на 10%.
     profit_border = profit >= money(min_profit * BORDERLINE_FACTOR)
     roi_border = roi is not None and (min_roi == 0 or roi >= (min_roi * BORDERLINE_FACTOR))
-    if price_ok and profit_border and roi_border:
+    within_profile_ceiling = price <= money(profile.max_purchase_price_uah)
+    if within_profile_ceiling and profit_border and roi_border:
         return EvaluationDecision.MANUAL_REVIEW, ["PRICE_BORDERLINE"]
 
     if not price_ok:
@@ -408,7 +410,7 @@ def evaluate_listing_for_profile(
 
 # ---------- Current evaluation selection (§6.7.3) ----------
 
-_DECISION_PRIORITY = {
+_DECISION_PRIORITY: dict[str, int] = {
     EvaluationDecision.CANDIDATE: 0,
     EvaluationDecision.MANUAL_REVIEW: 1,
     EvaluationDecision.REJECT: 2,

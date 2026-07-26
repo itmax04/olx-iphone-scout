@@ -1,5 +1,7 @@
 """Pricing forms."""
 
+from datetime import timedelta
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -65,12 +67,12 @@ class MarketPriceRuleForm(forms.ModelForm):
 
     def clean_checked_at(self):
         checked_at = self.cleaned_data["checked_at"]
-        if checked_at and checked_at > timezone.now() + timezone.timedelta(minutes=5):
+        if checked_at and checked_at > timezone.now() + timedelta(minutes=5):
             raise ValidationError("Дата проверки не может быть в будущем.")
         return checked_at
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         model_key = cleaned.get("model_key")
         storage = cleaned.get("storage_gb")
         if model_key and storage and storage not in MODEL_REGISTRY[model_key]["storage"]:
@@ -134,7 +136,7 @@ class DefectReserveRuleForm(forms.ModelForm):
         return self.cleaned_data.get("model_key") or ""
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         code = cleaned.get("code")
         model_key = cleaned.get("model_key") or ""
         if code:

@@ -1,6 +1,6 @@
 """Strict Pydantic schema for AI output. Extra/missing fields are rejected."""
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -9,7 +9,10 @@ from apps.pricing.constants import DEFECT_CODES
 SourceType = Literal["stated", "inferred", "unknown"]
 YesNoUnknown = Literal["yes", "no", "unknown"]
 LockStatus = Literal["clean", "locked", "unknown"]
-DefectCode = Literal[tuple(DEFECT_CODES.keys())]  # type: ignore[valid-type]
+if TYPE_CHECKING:
+    DefectCode = str
+else:
+    DefectCode = Literal[tuple(DEFECT_CODES.keys())]
 
 
 class _Strict(BaseModel):

@@ -329,13 +329,12 @@ def classify_item_type(text: str) -> tuple[str, tuple[str, ...]]:
     if _MOTHERBOARD_RE.search(normalized):
         item_type = "PARTS"
         codes.append("MOTHERBOARD_ONLY")
-    if _ACCESSORY_RE.search(normalized):
-        # An accessory keyword only marks the whole item as accessory when it
-        # dominates the title (e.g. "Чехол для iPhone 13"), which for MVP we
-        # approximate as: accessory keyword present without standalone phone
-        # context words like "продам айфон". Conservative: accessory keyword in
-        # the first 30 characters of the title.
-        if normalized.find(_ACCESSORY_RE.search(normalized).group(0)) <= 30:
+    accessory_match = _ACCESSORY_RE.search(normalized)
+    if accessory_match:
+        # An accessory keyword marks the whole item as accessory only when it
+        # dominates the title (e.g. "Чехол для iPhone 13"): keyword within the
+        # first 30 characters.
+        if normalized.find(accessory_match.group(0)) <= 30:
             item_type = "ACCESSORY"
             codes.append("ITEM_ACCESSORY")
     return item_type, tuple(codes)

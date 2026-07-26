@@ -88,7 +88,7 @@ class MonitorWorker:
         self._last_heartbeat = 0.0
         self._last_refresh_check = 0.0
         self._last_outbox = 0.0
-        self._last_cleanup_date = None
+        self._last_cleanup_date: object = None
 
     # -- source lazy init (Playwright only when really needed) -------------
 
@@ -223,7 +223,10 @@ class MonitorWorker:
                 self.heartbeat()
                 self._last_heartbeat = time.monotonic()
 
-            close_old_connections()
+            from django.db import connection as django_connection
+
+            if not django_connection.in_atomic_block:
+                close_old_connections()
             now = time.monotonic()
             try:
                 if now - self._last_heartbeat >= settings.WORKER_HEARTBEAT_SECONDS:

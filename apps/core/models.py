@@ -70,7 +70,7 @@ class AppState(models.Model):
     def __str__(self) -> str:
         return "AppState"
 
-    def save(self, *args: object, **kwargs: object) -> None:
+    def save(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self.pk = 1
         super().save(*args, **kwargs)
 

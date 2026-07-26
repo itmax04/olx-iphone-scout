@@ -39,7 +39,7 @@ def schedule_next_scan(
 ) -> None:
     now = timezone.now()
     interval = compute_interval_seconds(profile, rng)
-    update = {
+    update: dict[str, object] = {
         "last_scan_at": now,
         "next_scan_at": now + timedelta(seconds=interval),
     }

@@ -1,5 +1,7 @@
 """DRF serializers for pricing rules."""
 
+from datetime import timedelta
+
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -20,6 +22,7 @@ class MarketPriceRuleSerializer(serializers.ModelSerializer):
             "checked_at",
             "is_active",
         ]
+        validators: list = []  # unique ловится IntegrityError -> 409 по контракту §12
 
     def validate_model_key(self, value: str) -> str:
         if value not in MODEL_REGISTRY:
@@ -36,8 +39,18 @@ class MarketPriceRuleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Цена продажи должна быть больше нуля.")
         return value
 
+    def validate_acquisition_shipping_uah(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Сумма не может быть отрицательной.")
+        return value
+
+    def validate_other_cost_reserve_uah(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Сумма не может быть отрицательной.")
+        return value
+
     def validate_checked_at(self, value):
-        if value > timezone.now() + timezone.timedelta(minutes=5):
+        if value > timezone.now() + timedelta(minutes=5):
             raise serializers.ValidationError("Дата проверки не может быть в будущем.")
         return value
 
@@ -77,6 +90,7 @@ class DefectReserveRuleSerializer(serializers.ModelSerializer):
             "priority",
             "is_active",
         ]
+        validators: list = []  # unique -> 409
         extra_kwargs = {"model_key": {"required": False, "allow_blank": True}}
 
     def validate_code(self, value: str) -> str:

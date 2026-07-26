@@ -52,7 +52,7 @@ class DealForm(forms.ModelForm):
         }
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         status = cleaned.get("status")
         if status == DealStatus.SOLD:
             if not cleaned.get("sale_price_uah"):

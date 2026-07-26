@@ -99,6 +99,10 @@ def ingest_search_card(
     """
     now = timezone.now()
     item_type, _codes = classify_item_type(card.title)
+    from apps.pricing.extraction import extract_model, extract_storage
+
+    model_key, _ambiguous = extract_model(card.title)
+    storage_gb = extract_storage(card.title)
     hashes = compute_hashes(card.title, None, [])
 
     price_changed = False
@@ -116,6 +120,8 @@ def ingest_search_card(
                     current_price_uah=card.price_uah,
                     currency=card.currency if card.currency != "UNK" else "UAH",
                     item_type=item_type,
+                    model_key=model_key or "",
+                    storage_gb=storage_gb,
                     location=card.location,
                     primary_image_url=card.thumbnail_url,
                     last_seen_at=now,
@@ -205,6 +211,14 @@ def apply_detail(listing: Listing, detail: ListingDetailDTO) -> list[str]:
         facts_source = f"{listing.title}\n{listing.description or ''}"
         item_type, _ = classify_item_type(facts_source)
         listing.item_type = item_type
+        from apps.pricing.extraction import extract_model, extract_storage
+
+        model_key, _ambiguous = extract_model(facts_source)
+        storage_gb = extract_storage(facts_source)
+        if model_key:
+            listing.model_key = model_key
+        if storage_gb is not None:
+            listing.storage_gb = storage_gb
 
         now = timezone.now()
         listing.last_detail_fetched_at = now
