@@ -81,9 +81,7 @@ class DefectReserveRule(models.Model):
             ),
         ]
         indexes = [
-            models.Index(
-                fields=["is_active", "code", "model_key"], name="defect_rule_lookup_idx"
-            ),
+            models.Index(fields=["is_active", "code", "model_key"], name="defect_rule_lookup_idx"),
         ]
         ordering = ["code", "model_key"]
 

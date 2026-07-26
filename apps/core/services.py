@@ -83,7 +83,9 @@ def effective_ai(state: AppState | None = None) -> bool:
     return bool(settings.AI_ENABLED and state.ai_enabled and settings.OPENAI_API_KEY)
 
 
-def pause_monitoring(reason: str, *, actor: object = None, request: HttpRequest | None = None) -> AppState:
+def pause_monitoring(
+    reason: str, *, actor: object = None, request: HttpRequest | None = None
+) -> AppState:
     state = get_app_state()
     state.monitoring_paused = True
     state.pause_reason = reason[:255]

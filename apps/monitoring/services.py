@@ -66,7 +66,9 @@ def record_snapshot(
     """Create a snapshot for the listing's current state; dedup by fingerprint."""
     fingerprint = _change_fingerprint(listing)
     safe_summary = {
-        "price_uah": str(listing.current_price_uah) if listing.current_price_uah is not None else None,
+        "price_uah": str(listing.current_price_uah)
+        if listing.current_price_uah is not None
+        else None,
         "is_active": listing.is_active,
     }
     try:
@@ -207,9 +209,7 @@ def apply_detail(listing: Listing, detail: ListingDetailDTO) -> list[str]:
         now = timezone.now()
         listing.last_detail_fetched_at = now
         listing.last_seen_at = now
-        listing.next_refresh_at = now + timedelta(
-            hours=get_app_state().old_listing_refresh_hours
-        )
+        listing.next_refresh_at = now + timedelta(hours=get_app_state().old_listing_refresh_hours)
         listing.save()
 
         if changed or content_changed:
@@ -226,7 +226,9 @@ def mark_listing_inactive(listing: Listing, reason: str) -> None:
         listing.is_active = False
         listing.inactive_reason = reason[:64]
         listing.next_refresh_at = None
-        listing.save(update_fields=["is_active", "inactive_reason", "next_refresh_at", "updated_at"])
+        listing.save(
+            update_fields=["is_active", "inactive_reason", "next_refresh_at", "updated_at"]
+        )
         record_snapshot(listing, SnapshotSource.REFRESH, ["is_active"])
 
 
@@ -471,6 +473,104 @@ def refresh_listing(listing: Listing, source, *, send_alerts: bool = True) -> st
     if price_dropped:
         return "price_drop"
     return "changed"
+
+
+# ---------- Web-triggered actions ----------
+
+
+def queue_manual_run(profile: SearchProfile, *, actor=None, request=None) -> dict:
+    """Mark the profile due now; the worker picks it up. Web never scans."""
+    from apps.core.enums import AuditAction
+    from apps.core.exceptions import ConflictError
+    from apps.core.services import (
+        effective_monitoring,
+        enforce_rate_limit,
+        get_app_state,
+        record_audit,
+        worker_status,
+    )
+
+    state = get_app_state()
+    if profile.archived_at is not None:
+        raise ConflictError("Профиль архивирован.")
+    if not profile.is_active:
+        raise ConflictError("Профиль выключен. Включите его перед запуском.")
+    if profile.is_running:
+        raise ConflictError("Профиль уже сканируется. Подождите завершения.")
+    if not effective_monitoring(state):
+        raise ConflictError("Мониторинг сейчас выключен или на паузе; запуск невозможен.")
+    enforce_rate_limit(AuditAction.MANUAL_RUN_QUEUED, "MANUAL_RUN", actor)
+
+    now = timezone.now()
+    SearchProfile.objects.filter(pk=profile.pk).update(next_scan_at=now, blocked_until=None)
+    record_audit(
+        action=AuditAction.MANUAL_RUN_QUEUED,
+        actor=actor,
+        target_type="SearchProfile",
+        target_id=str(profile.id),
+        request=request,
+    )
+    return {
+        "queued": True,
+        "next_scan_at": now.isoformat(),
+        "worker_status": worker_status(state),
+    }
+
+
+def test_search_url(url: str, *, max_cards: int = 5, actor=None, request=None) -> dict:
+    """One safe fetch of a search URL. No DB rows are created."""
+    from apps.core.enums import AuditAction
+    from apps.core.services import enforce_rate_limit, record_audit
+    from apps.monitoring.validators import validate_olx_url
+
+    max_cards = min(max(int(max_cards), 1), 5)
+    validate_olx_url(url)
+    enforce_rate_limit(AuditAction.SEARCH_URL_TESTED, "SEARCH_URL_TEST", actor)
+
+    from apps.monitoring.collectors.playwright_source import PlaywrightOlxSource
+
+    source = PlaywrightOlxSource()
+    try:
+        page = source.fetch_search(url, max_cards=max_cards)
+    finally:
+        source.close()
+    record_audit(
+        action=AuditAction.SEARCH_URL_TESTED,
+        actor=actor,
+        target_type="SearchProfile",
+        changes={"found_count": len(page.cards)},
+        request=request,
+    )
+    return {
+        "found_count": len(page.cards),
+        "sample": [
+            {"title": card.title, "price_uah": str(card.price_uah) if card.price_uah else None}
+            for card in page.cards[:5]
+        ],
+        "parser_version": page.parser_version,
+    }
+
+
+def archive_profile(profile: SearchProfile, *, actor=None, request=None) -> SearchProfile:
+    from apps.core.enums import AuditAction
+    from apps.core.exceptions import ConflictError
+    from apps.core.services import record_audit
+
+    if profile.is_running:
+        raise ConflictError("Профиль сейчас сканируется; повторите после завершения.")
+    profile.is_active = False
+    profile.archived_at = timezone.now()
+    profile.save(update_fields=["is_active", "archived_at", "updated_at"])
+    record_audit(
+        action=AuditAction.SEARCH_PROFILE_ARCHIVED,
+        actor=actor,
+        target_type="SearchProfile",
+        target_id=str(profile.id),
+        request=request,
+    )
+    for listing in Listing.objects.filter(discoveries__search_profile=profile).distinct():
+        select_current_evaluation(listing)
+    return profile
 
 
 # ---------- Startup recovery ----------

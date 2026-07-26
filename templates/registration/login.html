@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Вход — OLX iPhone Scout{% endblock %}
+{% block anonymous_content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-2 mb-4">
+          <img src="/static/img/logo.svg" width="36" height="36" alt="">
+          <h1 class="h4 mb-0">OLX iPhone Scout</h1>
+        </div>
+        {% include "includes/field_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <div class="mb-3">
+            <label for="{{ form.identifier.auto_id }}" class="form-label">{{ form.identifier.label }}</label>
+            {{ form.identifier }}
+          </div>
+          <div class="mb-3">
+            <label for="{{ form.password.auto_id }}" class="form-label">{{ form.password.label }}</label>
+            <div class="input-group">
+              {{ form.password }}
+              <button class="btn btn-outline-secondary" type="button"
+                      data-password-toggle="#{{ form.password.auto_id }}"
+                      aria-pressed="false">Показать</button>
+            </div>
+          </div>
+          <div class="form-check mb-3">
+            {{ form.remember }}
+            <label class="form-check-label" for="{{ form.remember.auto_id }}">{{ form.remember.label }}</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <span class="btn-label">Войти</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

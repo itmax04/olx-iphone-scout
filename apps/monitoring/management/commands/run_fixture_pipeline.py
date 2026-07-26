@@ -48,14 +48,23 @@ class Command(BaseCommand):
         parser.add_argument("--fixture", default="detail_normal")
         parser.add_argument("--search-fixture", default="search_normal")
         parser.add_argument("--profile-fixture", default="iphone_13_128")
-        parser.add_argument("--no-send", action="store_true", default=True,
-                            help="Never send Telegram (always on; kept for CLI compatibility).")
-        parser.add_argument("--collector-only", action="store_true",
-                            help="Stop after ingest: no evaluation/outbox.")
-        parser.add_argument("--price-drop", action="store_true",
-                            help="Second pass with the price-drop fixtures.")
-        parser.add_argument("--cleanup-fixture-namespace", action="store_true",
-                            help="Delete only fixture-namespaced rows and exit.")
+        parser.add_argument(
+            "--no-send",
+            action="store_true",
+            default=True,
+            help="Never send Telegram (always on; kept for CLI compatibility).",
+        )
+        parser.add_argument(
+            "--collector-only", action="store_true", help="Stop after ingest: no evaluation/outbox."
+        )
+        parser.add_argument(
+            "--price-drop", action="store_true", help="Second pass with the price-drop fixtures."
+        )
+        parser.add_argument(
+            "--cleanup-fixture-namespace",
+            action="store_true",
+            help="Delete only fixture-namespaced rows and exit.",
+        )
 
     # -- guards --------------------------------------------------------------
 
@@ -71,7 +80,7 @@ class Command(BaseCommand):
     def handle(self, *args: object, **options) -> None:
         self._guard()
 
-        from apps.monitoring.models import Listing, SearchProfile
+        from apps.monitoring.models import Listing
 
         if options["cleanup_fixture_namespace"]:
             self._cleanup()
@@ -96,9 +105,7 @@ class Command(BaseCommand):
             search_fixture = "search_price_drop"
             detail_fixture = "detail_price_drop"
 
-        source = FixtureOlxSource(
-            search_fixture=search_fixture, detail_fixture=detail_fixture
-        )
+        source = FixtureOlxSource(search_fixture=search_fixture, detail_fixture=detail_fixture)
         run = process_profile_scan(profile, source, send_alerts=True)
         # send_alerts=True only creates outbox rows; nothing is delivered because
         # the worker outbox loop is a separate process and Telegram is not

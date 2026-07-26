@@ -113,15 +113,11 @@ class Listing(models.Model):
     canonical_url = models.CharField(max_length=2048)
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
-    current_price_uah = models.DecimalField(
-        max_digits=12, decimal_places=2, null=True, blank=True
-    )
+    current_price_uah = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default="UAH")
     model_key = models.CharField(max_length=40, blank=True, default="", db_index=True)
     storage_gb = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True)
-    item_type = models.CharField(
-        max_length=20, choices=ItemType.choices, default=ItemType.UNKNOWN
-    )
+    item_type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.UNKNOWN)
     location = models.CharField(max_length=255, blank=True, default="")
     seller_name = models.CharField(max_length=120, blank=True, default="")
     seller_profile_url = models.CharField(max_length=2048, blank=True, default="")
@@ -162,9 +158,7 @@ class Listing(models.Model):
     current_expected_profit_uah = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True, db_index=True
     )
-    current_roi_percent = models.DecimalField(
-        max_digits=8, decimal_places=2, null=True, blank=True
-    )
+    current_roi_percent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     current_effective_max_purchase_price_uah = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
@@ -221,9 +215,7 @@ class Listing(models.Model):
 
 class ListingDiscovery(models.Model):
     id = models.BigAutoField(primary_key=True)
-    listing = models.ForeignKey(
-        Listing, on_delete=models.CASCADE, related_name="discoveries"
-    )
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="discoveries")
     search_profile = models.ForeignKey(
         SearchProfile, on_delete=models.CASCADE, related_name="discoveries"
     )
@@ -232,14 +224,10 @@ class ListingDiscovery(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["listing", "search_profile"], name="discovery_unique"
-            ),
+            models.UniqueConstraint(fields=["listing", "search_profile"], name="discovery_unique"),
         ]
         indexes = [
-            models.Index(
-                fields=["search_profile", "-last_seen_at"], name="discovery_profile_idx"
-            ),
+            models.Index(fields=["search_profile", "-last_seen_at"], name="discovery_profile_idx"),
         ]
 
     def __str__(self) -> str:

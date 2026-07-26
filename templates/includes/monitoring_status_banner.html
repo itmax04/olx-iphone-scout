@@ -1,0 +1,16 @@
+{% if app_state %}
+  {% if monitoring_effective and worker_status == "HEALTHY" %}
+    <span class="badge rounded-pill status-banner-ok px-3 py-2">● Мониторинг работает</span>
+  {% elif not monitor_env_enabled %}
+    <span class="badge rounded-pill status-banner-warn px-3 py-2"
+          title="Заблокировано переменной окружения MONITOR_ENABLED">◼ Мониторинг выключен (env)</span>
+  {% elif app_state.monitoring_paused %}
+    <span class="badge rounded-pill status-banner-warn px-3 py-2">⏸ Пауза{% if app_state.pause_reason %}: {{ app_state.pause_reason }}{% endif %}</span>
+  {% elif worker_status == "NEVER_RUN" %}
+    <span class="badge rounded-pill status-banner-warn px-3 py-2">Worker не запускался</span>
+  {% elif worker_status == "STALE" %}
+    <span class="badge rounded-pill status-banner-warn px-3 py-2">Worker отстает</span>
+  {% else %}
+    <span class="badge rounded-pill status-banner-danger px-3 py-2">⚠ Worker недоступен</span>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,22 @@
+<div class="d-flex align-items-center gap-2 mb-4 text-white">
+  <img src="/static/img/logo.svg" width="32" height="32" alt="">
+  <span class="fw-bold">OLX iPhone Scout</span>
+</div>
+<nav class="nav nav-pills flex-column gap-1" aria-label="Основная навигация">
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
+     href="{% url 'dashboard:index' %}">Обзор</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'searches' %}active{% endif %}"
+     href="{% url 'searches:list' %}">Поиски</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'listings' %}active{% endif %}"
+     href="{% url 'listings:list' %}">Объявления</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'prices' %}active{% endif %}"
+     href="{% url 'prices:list' %}">Цены и резервы</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'deals' %}active{% endif %}"
+     href="{% url 'deals:list' %}">Сделки</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'runs' %}active{% endif %}"
+     href="{% url 'runs:list' %}">Запуски</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'app_settings' %}active{% endif %}"
+     href="{% url 'app_settings:index' %}">Настройки</a>
+  <a class="nav-link px-3 {% if request.resolver_match.namespace == 'system' %}active{% endif %}"
+     href="{% url 'system:index' %}">Система</a>
+</nav>

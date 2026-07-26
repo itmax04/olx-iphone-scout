@@ -57,4 +57,6 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             user_model.objects.create_superuser(username=username, email=email, password=password)
-        self.stdout.write(self.style.SUCCESS(f"bootstrap_admin: administrator '{username}' created"))
+        self.stdout.write(
+            self.style.SUCCESS(f"bootstrap_admin: administrator '{username}' created")
+        )

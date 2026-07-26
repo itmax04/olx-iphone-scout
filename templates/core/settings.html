@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Настройки — OLX iPhone Scout{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Настройки</h1>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Мониторинг</h2>
+        {% if not monitor_env_enabled %}
+          <div class="alert alert-warning" role="alert">
+            Мониторинг заблокирован переменной окружения <code>MONITOR_ENABLED=false</code>.
+            Переключатели ниже не могут его включить.
+          </div>
+        {% endif %}
+        {% if app_state.monitoring_paused %}
+          <p>Состояние: <strong>на паузе</strong>{% if app_state.pause_reason %} ({{ app_state.pause_reason }}){% endif %}</p>
+          <form method="post" action="{% url 'system:resume' %}">{% csrf_token %}
+            <input type="hidden" name="next" value="/settings/">
+            {% if app_state.safety_ack_required %}
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="acknowledge_risk" value="1" id="ack-risk">
+                <label class="form-check-label" for="ack-risk">
+                  Понимаю риск: был инцидент CAPTCHA/блокировки ({{ app_state.safety_block_reason }})
+                </label>
+              </div>
+            {% endif %}
+            <button class="btn btn-success" type="submit"{% if not monitor_env_enabled %} disabled title="Заблокировано переменной окружения"{% endif %}>Возобновить</button>
+          </form>
+        {% else %}
+          <p>Состояние: <strong>активен</strong></p>
+          <form method="post" action="{% url 'system:pause' %}">{% csrf_token %}
+            <input type="hidden" name="next" value="/settings/">
+            <div class="mb-2">
+              <label class="form-label" for="pause-reason">Причина паузы</label>
+              <input type="text" class="form-control" name="reason" id="pause-reason" maxlength="255"
+                     placeholder="Например: уезжаю, проверка блокировки">
+            </div>
+            <button class="btn btn-outline-warning" type="submit">Приостановить</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Параметры</h2>
+        {% include "includes/field_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-3 {% if field.name == 'ai_enabled' %}form-check form-switch{% endif %}">
+            {% if field.name == 'ai_enabled' %}
+              {{ field }}
+              <label class="form-check-label" for="{{ field.auto_id }}">{{ field.label }}</label>
+              {% if not integrations.ai_env_enabled %}
+                <div class="small text-muted">Заблокировано переменной окружения AI_ENABLED=false.</div>
+              {% endif %}
+            {% else %}
+              <label class="form-label" for="{{ field.auto_id }}">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary"><span class="btn-label">Сохранить настройки</span></button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Интеграции (только чтение)</h2>
+        <dl class="row small">
+          <dt class="col-7">OpenAI</dt>
+          <dd class="col-5">{% if integrations.openai_configured %}<span class="badge bg-success">Настроено</span>{% else %}<span class="badge bg-secondary">Не настроено</span>{% endif %}</dd>
+          <dt class="col-7">Модель fast / deep</dt>
+          <dd class="col-5">{{ integrations.fast_model }}<br>{{ integrations.deep_model }}</dd>
+          <dt class="col-7">Telegram</dt>
+          <dd class="col-5">{% if integrations.telegram_configured %}<span class="badge bg-success">Настроено</span>{% else %}<span class="badge bg-secondary">Не настроено</span>{% endif %}</dd>
+          <dt class="col-7">AI_ENABLED (env)</dt>
+          <dd class="col-5">{{ integrations.ai_env_enabled|yesno:"true,false" }}</dd>
+          <dt class="col-7">MONITOR_ENABLED (env)</dt>
+          <dd class="col-5">{{ integrations.monitor_env_enabled|yesno:"true,false" }}</dd>
+          <dt class="col-7">Версия приложения</dt>
+          <dd class="col-5">{{ APP_VERSION }}</dd>
+        </dl>
+        <div class="d-grid gap-2">
+          <form method="post" action="{% url 'app_settings:telegram_test' %}">{% csrf_token %}
+            <button class="btn btn-outline-primary w-100" type="submit"><span class="btn-label">Отправить тест Telegram</span></button>
+          </form>
+          <form method="post" action="{% url 'app_settings:openai_check' %}">{% csrf_token %}
+            <button class="btn btn-outline-secondary w-100" type="submit"><span class="btn-label">Проверить OpenAI-конфигурацию</span></button>
+          </form>
+        </div>
+        <p class="small text-muted mt-2 mb-0">Значения токенов не показываются и не возвращаются API.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

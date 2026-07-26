@@ -17,6 +17,7 @@ BATCH_SIZE = 500
 def cleanup_counts() -> dict[str, int]:
     """Read-only preview of what run_cleanup(confirm=True) would delete."""
     from axes.models import AccessAttempt, AccessLog
+
     from apps.core.models import AppState, AuditEvent
     from apps.monitoring.enums import ScanRunStatus
     from apps.monitoring.models import ScanRun
@@ -24,14 +25,19 @@ def cleanup_counts() -> dict[str, int]:
     state = AppState.get_solo()
     now = timezone.now()
     scan_cutoff = now - timedelta(days=state.scan_run_retention_days)
-    failed_cutoff = now - timedelta(days=max(state.scan_run_retention_days, FAILED_RUN_MIN_RETENTION_DAYS))
+    failed_cutoff = now - timedelta(
+        days=max(state.scan_run_retention_days, FAILED_RUN_MIN_RETENTION_DAYS)
+    )
     audit_cutoff = now - timedelta(days=state.audit_retention_days)
 
-    scan_runs = ScanRun.objects.filter(
-        status__in=[ScanRunStatus.SUCCESS, ScanRunStatus.PARTIAL], started_at__lt=scan_cutoff
-    ).count() + ScanRun.objects.filter(
-        status__in=[ScanRunStatus.FAILED, ScanRunStatus.BLOCKED], started_at__lt=failed_cutoff
-    ).count()
+    scan_runs = (
+        ScanRun.objects.filter(
+            status__in=[ScanRunStatus.SUCCESS, ScanRunStatus.PARTIAL], started_at__lt=scan_cutoff
+        ).count()
+        + ScanRun.objects.filter(
+            status__in=[ScanRunStatus.FAILED, ScanRunStatus.BLOCKED], started_at__lt=failed_cutoff
+        ).count()
+    )
     audit_events = AuditEvent.objects.filter(created_at__lt=audit_cutoff).count()
     axes_logs = (
         AccessLog.objects.filter(attempt_time__lt=audit_cutoff).count()
@@ -65,6 +71,7 @@ def run_cleanup(*, confirm: bool) -> dict[str, int]:
         return cleanup_counts()
 
     from axes.models import AccessAttempt, AccessLog
+
     from apps.core.models import AppState, AuditEvent
     from apps.monitoring.enums import ScanRunStatus
     from apps.monitoring.models import ScanRun
@@ -72,7 +79,9 @@ def run_cleanup(*, confirm: bool) -> dict[str, int]:
     state = AppState.get_solo()
     now = timezone.now()
     scan_cutoff = now - timedelta(days=state.scan_run_retention_days)
-    failed_cutoff = now - timedelta(days=max(state.scan_run_retention_days, FAILED_RUN_MIN_RETENTION_DAYS))
+    failed_cutoff = now - timedelta(
+        days=max(state.scan_run_retention_days, FAILED_RUN_MIN_RETENTION_DAYS)
+    )
     audit_cutoff = now - timedelta(days=state.audit_retention_days)
 
     result = {

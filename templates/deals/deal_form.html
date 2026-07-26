@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{% if deal %}Сделка{% else %}Новая покупка{% endif %} — OLX iPhone Scout{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'deals:list' %}">Сделки</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if deal %}Изменение{% else %}Новая покупка{% endif %}</li>
+  </ol>
+</nav>
+<h1 class="h4 mb-3">{% if deal %}Сделка по «{{ listing.title|truncatechars:50 }}»{% else %}Новая покупка{% endif %}</h1>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        {% include "includes/field_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if not deal %}<input type="hidden" name="listing" value="{{ listing.pk }}">{% endif %}
+          {% if deal %}<input type="hidden" name="expected_updated_at" value="{{ deal.updated_at|date:'c' }}">{% endif %}
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.auto_id }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          {% endfor %}
+          <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary"><span class="btn-label">Сохранить</span></button>
+            {% if not deal %}
+            <button type="submit" name="save_and_open" value="1" class="btn btn-outline-primary">Сохранить и открыть</button>
+            {% endif %}
+            <a href="{% url 'deals:list' %}" class="btn btn-outline-secondary">Отмена</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6">Объявление</h2>
+        <dl class="row small mb-0">
+          <dt class="col-5">Название</dt><dd class="col-7">{{ listing.title }}</dd>
+          <dt class="col-5">OLX ID</dt><dd class="col-7">{{ listing.olx_id }}</dd>
+          <dt class="col-5">Текущая цена</dt>
+          <dd class="col-7">{% if listing.current_price_uah %}{{ listing.current_price_uah|floatformat:0 }} грн{% else %}—{% endif %}</dd>
+          <dt class="col-5">Ожидаемая прибыль</dt>
+          <dd class="col-7">{% if listing.current_expected_profit_uah is not None %}{{ listing.current_expected_profit_uah|floatformat:0 }} грн{% else %}—{% endif %}</dd>
+        </dl>
+        {% if deal %}
+        <hr>
+        <h2 class="h6">Снимок на момент покупки (неизменяемый)</h2>
+        <dl class="row small mb-0">
+          <dt class="col-6">Ожидалась прибыль</dt><dd class="col-6">{{ deal.purchase_snapshot.expected_profit_uah|default:"—" }} грн</dd>
+          <dt class="col-6">ROI на покупке</dt><dd class="col-6">{{ deal.purchase_snapshot.roi_percent|default:"—" }}%</dd>
+          <dt class="col-6">Зафиксирован</dt><dd class="col-6">{{ deal.purchase_snapshot.captured_at|default:"—" }}</dd>
+        </dl>
+        {% if estimated_profit is not None %}
+        <hr>
+        <div>Фактическая прибыль (расчет сервера): <strong>{{ estimated_profit }} грн</strong></div>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -57,9 +57,7 @@ class OpenAiResponsesClient:
         effort = settings.OPENAI_REASONING_EFFORT
         try:
             try:
-                response = self._client.responses.create(
-                    **request, reasoning={"effort": effort}
-                )
+                response = self._client.responses.create(**request, reasoning={"effort": effort})
             except TypeError:
                 response = self._client.responses.create(**request)
             except APIError as exc:

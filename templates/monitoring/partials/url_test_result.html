@@ -1,0 +1,16 @@
+{% if test_error %}
+  <div class="alert alert-danger mb-0" role="alert">{{ test_error }}</div>
+{% elif test_result %}
+  {% if test_result.found_count == 0 %}
+    <div class="alert alert-warning mb-0" role="status">По этому URL карточки не найдены.</div>
+  {% else %}
+    <div class="alert alert-success mb-0" role="status">
+      Найдено карточек: {{ test_result.found_count }} (parser {{ test_result.parser_version }})
+      <ul class="mb-0 small">
+        {% for item in test_result.sample %}
+          <li>{{ item.title }} — {% if item.price_uah %}{{ item.price_uah }} грн{% else %}цена не указана{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endif %}

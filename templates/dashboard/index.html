@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Обзор — OLX iPhone Scout{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0">Обзор</h1>
+  <div class="d-flex gap-2">
+    {% if app_state and app_state.monitoring_paused %}
+      <form method="post" action="{% url 'system:resume' %}">{% csrf_token %}
+        <button class="btn btn-success" type="submit"{% if not monitor_env_enabled %} disabled title="Заблокировано переменной окружения MONITOR_ENABLED"{% endif %}>Возобновить</button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'system:pause' %}"
+            onsubmit="return confirm('Приостановить мониторинг OLX?');">
+        {% csrf_token %}
+        <input type="hidden" name="reason" value="Ручная пауза с дашборда">
+        <button class="btn btn-outline-warning" type="submit">Приостановить мониторинг</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if stats_error %}
+  <div class="alert alert-warning" role="alert">{{ stats_error }} (request ID: {{ request.request_id }})</div>
+{% elif stats %}
+<p class="text-muted">Сегодня: {{ stats.checked_today }} проверок · {{ stats.candidates }} кандидатов · {{ stats.errors_today }} ошибок</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Новые за 24 часа</div>
+    <div class="metric-value">{{ stats.new_listings }}</div>
+  </div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Кандидаты</div>
+    <div class="metric-value">{{ stats.candidates }}</div>
+    <a href="{% url 'listings:list' %}?candidate=1" class="small">Открыть кандидатов</a>
+  </div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Цена упала (7 дней)</div>
+    <div class="metric-value">{{ stats.price_drops }}</div>
+  </div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Расчетная прибыль</div>
+    <div class="metric-value">{{ stats.candidate_expected_profit_uah|floatformat:0 }} грн</div>
+  </div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Вложено в телефоны</div>
+    <div class="metric-value">{{ stats.capital_in_stock_uah|floatformat:0 }} грн</div>
+  </div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="card metric-card h-100"><div class="card-body">
+    <div class="text-muted small">Прибыль за месяц</div>
+    <div class="metric-value">{{ stats.realized_profit_uah|floatformat:0 }} грн</div>
+  </div></div></div>
+</div>
+
+{% if not recent_candidates and stats.new_listings == 0 %}
+  {% include "includes/empty_state.html" with empty_title="Начните с настройки" empty_text="1) Создайте поисковый профиль с URL выдачи OLX. 2) Добавьте рыночную цену для модели. 3) Включите мониторинг в настройках (или прогоните фикстурную приемку из README)." empty_action_url="/searches/new/" empty_action_label="Создать поиск" %}
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-12 col-xl-8">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6">Последние кандидаты</h2>
+        {% if recent_candidates %}
+        <div class="table-responsive-wrap">
+          <table class="table table-sm align-middle mb-0">
+            <caption class="visually-hidden">Последние кандидаты</caption>
+            <thead><tr><th>Объявление</th><th>Цена</th><th>Прибыль</th><th>Риск</th><th></th></tr></thead>
+            <tbody>
+              {% for listing in recent_candidates %}
+              <tr>
+                <td><a href="{% url 'listings:detail' listing.pk %}">{{ listing.title|truncatechars:45 }}</a></td>
+                <td>{% if listing.current_price_uah %}{{ listing.current_price_uah|floatformat:0 }} грн{% endif %}</td>
+                <td class="money-profit-positive">{% if listing.current_expected_profit_uah %}+{{ listing.current_expected_profit_uah|floatformat:0 }} грн{% endif %}</td>
+                <td><span class="badge badge-risk-{{ listing.current_risk_level }}">{{ listing.get_current_risk_level_display }}</span></td>
+                <td><a class="btn btn-sm btn-outline-secondary" href="{{ listing.canonical_url }}" target="_blank" rel="noopener noreferrer">Открыть OLX</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Кандидатов пока нет.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6">Воронка</h2>
+        <div class="d-flex flex-wrap gap-3 small">
+          <span>найдено <strong>{{ funnel.found }}</strong></span> →
+          <span>кандидат <strong>{{ funnel.candidates }}</strong></span> →
+          <span>связался <strong>{{ funnel.contacted }}</strong></span> →
+          <span>купил <strong>{{ funnel.bought }}</strong></span> →
+          <span>продал <strong>{{ funnel.sold }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6">Последние ошибки</h2>
+        {% if recent_errors %}
+        <ul class="list-unstyled small mb-2">
+          {% for run in recent_errors %}
+          <li class="py-1 border-bottom">
+            {{ run.started_at|date:"d.m H:i" }} · {{ run.error_code }}
+            <span class="text-muted">{% if run.search_profile %}({{ run.search_profile.name }}){% endif %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="{% url 'runs:list' %}?status=failed" class="small">Открыть ошибки</a>
+        {% else %}
+        <p class="text-muted mb-0">Ошибок нет.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6">Просроченные проверки</h2>
+        {% if overdue_profiles %}
+        <ul class="list-unstyled small mb-0">
+          {% for profile in overdue_profiles %}
+          <li class="py-1 border-bottom">{{ profile.name }} — план {{ profile.next_scan_at|date:"H:i" }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">Все проверки по расписанию.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6">Расходы AI за месяц</h2>
+        <div class="metric-value">${{ ai_month_cost }}</div>
+        <div class="small text-muted">Оценка по сохраненным usage-токенам.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

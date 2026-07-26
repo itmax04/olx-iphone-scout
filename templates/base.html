@@ -1,0 +1,60 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}OLX iPhone Scout{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="icon" href="{% static 'img/logo.svg' %}" type="image/svg+xml">
+</head>
+<body>
+<a class="skip-link" href="#main-content">К содержимому</a>
+{% if user.is_authenticated and user.is_superuser %}
+<div class="d-flex">
+  <aside class="app-sidebar d-none d-lg-flex flex-column p-3 flex-shrink-0">
+    {% include "includes/sidebar.html" %}
+  </aside>
+  <div class="flex-grow-1 min-vw-0">
+    <header class="app-topbar d-flex align-items-center px-3 gap-3">
+      <button class="btn btn-outline-secondary d-lg-none" type="button"
+              data-bs-toggle="offcanvas" data-bs-target="#mobileNav"
+              aria-controls="mobileNav" aria-label="Открыть меню">☰</button>
+      <span class="fw-bold d-lg-none">OLX Scout</span>
+      {% include "includes/monitoring_status_banner.html" %}
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="text-muted d-none d-md-inline">{{ user.username }}</span>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+        </form>
+      </div>
+    </header>
+    <div class="offcanvas offcanvas-start app-sidebar text-white" tabindex="-1" id="mobileNav"
+         aria-label="Навигация">
+      <div class="offcanvas-header">
+        <span class="fw-bold text-white">OLX iPhone Scout</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+                aria-label="Закрыть"></button>
+      </div>
+      <div class="offcanvas-body p-3">
+        {% include "includes/sidebar.html" %}
+      </div>
+    </div>
+    <main id="main-content" class="app-content container-fluid py-4 px-3 px-lg-4">
+      {% include "includes/flash_messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+<main id="main-content" class="container py-5">
+  {% include "includes/flash_messages.html" %}
+  {% block anonymous_content %}{% endblock %}
+</main>
+{% endif %}
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+<script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

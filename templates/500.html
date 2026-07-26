@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Внутренняя ошибка — OLX iPhone Scout{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-6">500</h1>
+  <p class="lead">Внутренняя ошибка</p>
+  <p class="text-muted">Что-то пошло не так. Попробуйте обновить страницу; технические детали записаны в журнал.</p>
+  <a href="/dashboard/" class="btn btn-primary">На главную</a>
+</div>
+{% endblock %}
+{% block anonymous_content %}
+<div class="text-center py-5">
+  <h1 class="display-6">500</h1>
+  <p class="lead">Внутренняя ошибка</p>
+  <a href="/accounts/login/" class="btn btn-primary">Ко входу</a>
+</div>
+{% endblock %}

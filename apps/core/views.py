@@ -102,16 +102,12 @@ def health_ready(request: HttpRequest) -> JsonResponse:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
     except Exception:
-        return JsonResponse(
-            {"status": "not_ready", "database": "unavailable"}, status=503
-        )
+        return JsonResponse({"status": "not_ready", "database": "unavailable"}, status=503)
     try:
         executor = MigrationExecutor(connection)
         plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
         if plan:
-            return JsonResponse(
-                {"status": "not_ready", "database": "schema_pending"}, status=503
-            )
+            return JsonResponse({"status": "not_ready", "database": "schema_pending"}, status=503)
     except Exception:
         return JsonResponse({"status": "not_ready", "database": "schema_pending"}, status=503)
     try:
@@ -165,7 +161,9 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
         detail = exc.detail
         if isinstance(detail, dict):
             field_errors = {
-                str(field): [str(item) for item in (errors if isinstance(errors, list) else [errors])]
+                str(field): [
+                    str(item) for item in (errors if isinstance(errors, list) else [errors])
+                ]
                 for field, errors in detail.items()
             }
         elif isinstance(detail, list):

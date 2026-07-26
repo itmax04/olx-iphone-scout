@@ -31,9 +31,7 @@ class AiAnalysis(models.Model):
     )
     input_tokens = models.IntegerField(null=True, blank=True)
     output_tokens = models.IntegerField(null=True, blank=True)
-    estimated_cost_usd = models.DecimalField(
-        max_digits=12, decimal_places=6, null=True, blank=True
-    )
+    estimated_cost_usd = models.DecimalField(max_digits=12, decimal_places=6, null=True, blank=True)
     error_code = models.CharField(max_length=64, blank=True, default="")
     error_message = models.CharField(max_length=500, blank=True, default="")
     started_at = models.DateTimeField(null=True, blank=True)
@@ -111,9 +109,7 @@ class Evaluation(models.Model):
     shipping_reserve_uah = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal("0")
     )
-    defect_reserve_uah = models.DecimalField(
-        max_digits=12, decimal_places=2, default=Decimal("0")
-    )
+    defect_reserve_uah = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
     other_reserve_uah = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
     total_reserve_uah = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
     expected_total_investment_uah = models.DecimalField(

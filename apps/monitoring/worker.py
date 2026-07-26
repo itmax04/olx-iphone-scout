@@ -164,6 +164,15 @@ class MonitorWorker:
 
         return process_outbox_batch()
 
+    def run_pending_analyses(self) -> int:
+        from apps.analysis.services import process_pending_analyses
+
+        try:
+            return process_pending_analyses()
+        except Exception:
+            logger.exception("pending_analyses_failed")
+            return 0
+
     def run_cleanup_if_due(self) -> None:
         today = timezone.localdate()
         if self._last_cleanup_date == today:
@@ -226,6 +235,7 @@ class MonitorWorker:
                     self._last_outbox = now
 
                 worked = self.run_due_scan()
+                self.run_pending_analyses()
 
                 if now - self._last_refresh_check >= 60:
                     self.run_refresh_batch()

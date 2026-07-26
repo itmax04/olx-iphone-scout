@@ -222,9 +222,7 @@ def calculate(
     if profit is not None and investment > 0:
         roi = (profit / investment * Decimal("100")).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
 
-    calculated_max = (
-        money(sale - total_reserve - min_expected_profit) if sale is not None else None
-    )
+    calculated_max = money(sale - total_reserve - min_expected_profit) if sale is not None else None
     effective_max = (
         min(money(profile_max_price), calculated_max)
         if calculated_max is not None
@@ -270,9 +268,7 @@ def _economics_decision(
 
     # Borderline: every threshold within 10%, none catastrophically missed.
     profit_border = profit >= money(min_profit * BORDERLINE_FACTOR)
-    roi_border = roi is not None and (
-        min_roi == 0 or roi >= (min_roi * BORDERLINE_FACTOR)
-    )
+    roi_border = roi is not None and (min_roi == 0 or roi >= (min_roi * BORDERLINE_FACTOR))
     if price_ok and profit_border and roi_border:
         return EvaluationDecision.MANUAL_REVIEW, ["PRICE_BORDERLINE"]
 
@@ -431,9 +427,7 @@ def select_current_evaluation(listing: Listing) -> Evaluation | None:
         ).select_related("search_profile", "ai_analysis")
     )
     if latest_snapshot is not None:
-        candidates = [
-            e for e in candidates if e.listing_snapshot_id in (latest_snapshot.id, None)
-        ]
+        candidates = [e for e in candidates if e.listing_snapshot_id in (latest_snapshot.id, None)]
 
     def sort_key(evaluation: Evaluation):
         profit = evaluation.expected_profit_uah

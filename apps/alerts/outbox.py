@@ -115,7 +115,5 @@ def process_outbox_batch(client: TelegramClient | None = None) -> int:
             continue
         _mark_sent(item, message_id)
         sent += 1
-        logger.info(
-            "outbox_sent", extra={"event": "outbox_sent", "outbox_id": str(item.id)}
-        )
+        logger.info("outbox_sent", extra={"event": "outbox_sent", "outbox_id": str(item.id)})
     return sent

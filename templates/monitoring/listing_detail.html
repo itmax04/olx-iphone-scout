@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.title }} — OLX iPhone Scout{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'listings:list' %}">Объявления</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ listing.olx_id }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ listing.title }}</h1>
+    <div class="text-muted small">
+      {{ model_label|default:listing.model_key }} · {{ listing.storage_gb|default:"?" }} GB ·
+      OLX ID {{ listing.olx_id }} ·
+      найдено {{ listing.first_seen_at|date:"d.m.Y H:i" }} ·
+      обновлено {{ listing.last_seen_at|date:"d.m.Y H:i" }}
+      {% if not listing.is_active %}· <span class="text-danger">неактивно ({{ listing.inactive_reason|default:"снято" }})</span>{% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="badge bg-secondary align-self-center">{{ listing.get_decision_status_display }}</span>
+    <span class="badge badge-risk-{{ listing.current_risk_level }} align-self-center">Риск: {{ listing.get_current_risk_level_display }}</span>
+    <a class="btn btn-primary" href="{{ listing.canonical_url }}" target="_blank" rel="noopener noreferrer">Открыть OLX</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    {% if listing.photo_urls %}
+    <div class="card mb-3">
+      <div class="card-body d-flex gap-2 flex-wrap">
+        {% for photo in listing.photo_urls|slice:":8" %}
+          <img src="{{ photo }}" alt="Фото {{ forloop.counter }}" class="listing-thumb"
+               style="width:96px;height:96px" loading="lazy" referrerpolicy="no-referrer">
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Экономика (детерминированный расчет)</h2>
+        {% if listing.current_evaluation %}
+        {% with ev=listing.current_evaluation %}
+        <div class="table-responsive-wrap">
+        <table class="table table-sm mb-2">
+          <caption class="visually-hidden">Расчет прибыли</caption>
+          <tbody>
+            <tr><td>Цена продавца</td><td class="text-end">{{ ev.purchase_price_uah|floatformat:0 }} грн</td></tr>
+            <tr><td>Ожидаемая быстрая продажа</td><td class="text-end">{% if ev.expected_sale_price_uah %}{{ ev.expected_sale_price_uah|floatformat:0 }} грн{% else %}—{% endif %}</td></tr>
+            <tr><td>Резерв доставки</td><td class="text-end">{{ ev.shipping_reserve_uah|floatformat:0 }} грн</td></tr>
+            {% for reserve in ev.applied_reserves %}
+            <tr><td class="ps-4">Резерв: {{ reserve.label }}</td><td class="text-end">{{ reserve.amount_uah }} грн</td></tr>
+            {% endfor %}
+            <tr><td>Прочий резерв</td><td class="text-end">{{ ev.other_reserve_uah|floatformat:0 }} грн</td></tr>
+            <tr class="fw-semibold"><td>Всего резервов</td><td class="text-end">{{ ev.total_reserve_uah|floatformat:0 }} грн</td></tr>
+            <tr class="fw-semibold"><td>Полные вложения</td><td class="text-end">{{ ev.expected_total_investment_uah|floatformat:0 }} грн</td></tr>
+            <tr class="fw-semibold">
+              <td>Ожидаемая прибыль</td>
+              <td class="text-end {% if ev.expected_profit_uah >= 0 %}money-profit-positive{% else %}money-profit-negative{% endif %}">
+                {% if ev.expected_profit_uah is not None %}{{ ev.expected_profit_uah|floatformat:0 }} грн{% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr><td>ROI</td><td class="text-end">{% if ev.roi_percent is not None %}{{ ev.roi_percent }}%{% else %}—{% endif %}</td></tr>
+            <tr><td>Максимальная закупка (расчет)</td><td class="text-end">{% if ev.effective_max_purchase_price_uah %}{{ ev.effective_max_purchase_price_uah|floatformat:0 }} грн{% else %}—{% endif %}</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="small text-muted">
+          Решение: <strong>{{ ev.decision }}</strong> · причины: {{ ev.reason_codes|join:", " }} ·
+          профиль: {% if ev.search_profile %}{{ ev.search_profile.name }}{% else %}—{% endif %} ·
+          формула {{ ev.formula_version }}
+        </div>
+        {% endwith %}
+        {% else %}
+        <p class="text-muted mb-1">Расчета пока нет.</p>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'prices:market_create' %}">Добавить рыночную цену</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">AI-анализ</h2>
+        {% if analysis %}
+          <div class="small text-muted mb-2">
+            Tier {{ analysis.tier }} · модель {{ analysis.model_id|default:analysis.requested_model_id }} ·
+            уверенность {% if analysis.confidence %}{{ analysis.confidence }}{% else %}—{% endif %} ·
+            {{ analysis.completed_at|date:"d.m.Y H:i" }}
+          </div>
+          {% if analysis_result %}
+          <ul class="small mb-2">
+            {% if analysis_result.battery_health.value %}<li>АКБ: заявлено {{ analysis_result.battery_health.value }}%{% if analysis_result.battery_health.evidence %} («{{ analysis_result.battery_health.evidence }}»){% endif %}</li>{% endif %}
+            <li>Face ID: {{ analysis_result.face_id.status }}</li>
+            <li>True Tone: {{ analysis_result.true_tone.status }}</li>
+            <li>Замена дисплея: {{ analysis_result.display_replacement.status }}</li>
+            <li>iCloud: {{ analysis_result.icloud_status.status }} · MDM: {{ analysis_result.mdm_status.status }}</li>
+            {% if analysis_result.defects %}<li>Дефекты: {{ analysis_result.defects|join:", " }}</li>{% endif %}
+          </ul>
+          {% if analysis_result.missing_checks %}
+          <div class="small"><strong>Не проверено:</strong> {{ analysis_result.missing_checks|join:", " }}</div>
+          {% endif %}
+          {% if analysis_result.seller_questions_uk %}
+          <div class="mt-2">
+            <strong class="small">Вопросы продавцу (украинский):</strong>
+            <div id="seller-questions" class="border rounded p-2 small bg-light">
+              {% for question in analysis_result.seller_questions_uk %}{{ question }}
+{% endfor %}</div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-1"
+                    data-copy-target="#seller-questions">Скопировать вопросы</button>
+          </div>
+          {% endif %}
+          {% endif %}
+        {% elif listing.analysis_status == "PENDING" or listing.analysis_status == "RUNNING" %}
+          <p class="text-muted mb-0">Анализ в очереди / выполняется…</p>
+        {% elif listing.analysis_status == "FAILED" %}
+          <p class="text-danger mb-0">Анализ не удался. Можно повторить ниже.</p>
+        {% else %}
+          <p class="text-muted mb-0">AI-анализ не выполнялся{% if not listing.is_active %} (объявление неактивно){% endif %}.
+            Детерминированный расчет от него не зависит.</p>
+        {% endif %}
+        <form method="post" action="{% url 'listings:reanalyze' listing.pk %}" class="mt-3 row g-2">
+          {% csrf_token %}
+          <div class="col-auto form-check ms-2">
+            <input type="checkbox" class="form-check-input" name="force" value="1" id="force-reanalyze">
+            <label for="force-reanalyze" class="form-check-label">Принудительно (нужна причина)</label>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="visually-hidden" for="reanalyze-reason">Причина</label>
+            <input type="text" class="form-control form-control-sm" name="reason" id="reanalyze-reason"
+                   placeholder="Причина повторного анализа (5–255 символов)">
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-outline-primary"><span class="btn-label">Повторить AI-анализ</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Описание</h2>
+        {% if listing.description %}
+          <p class="small" style="white-space: pre-wrap">{{ listing.description }}</p>
+        {% else %}
+          <p class="text-muted mb-0">Описание не загружено.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">История изменений</h2>
+        {% if snapshots|length > 1 %}
+        <ul class="list-unstyled small mb-0">
+          {% for snapshot in snapshots %}
+          <li class="border-bottom py-1 d-flex justify-content-between">
+            <span>{{ snapshot.observed_at|date:"d.m.Y H:i" }} · {{ snapshot.source }} · {{ snapshot.changed_fields|join:", " }}</span>
+            <span>{% if snapshot.price_uah %}{{ snapshot.price_uah|floatformat:0 }} грн{% else %}—{% endif %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <p class="text-muted mb-0">Изменений пока нет.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Статус и заметки</h2>
+        <form method="post" action="{% url 'listings:set_status' listing.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="expected_current_status" value="{{ listing.decision_status }}">
+          <div class="mb-2">
+            <label class="form-label" for="status-select">Статус</label>
+            <select class="form-select" name="status" id="status-select">
+              <option value="">— не менять —</option>
+              <option value="CANDIDATE">Кандидат</option>
+              <option value="REVIEWED">Просмотрено</option>
+              <option value="CONTACTED">Связался</option>
+              <option value="REJECTED">Пропустить</option>
+              <option value="ARCHIVED">Архивировать</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" for="note-input">Заметка</label>
+            <textarea class="form-control" name="note" id="note-input" rows="3"
+                      maxlength="5000">{{ listing.manual_notes }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><span class="btn-label">Сохранить</span></button>
+        </form>
+        {% if listing.decision_status != "BOUGHT" and listing.decision_status != "SOLD" %}
+        <a href="{% url 'deals:create' %}?listing={{ listing.pk }}" class="btn btn-outline-success w-100 mt-2">Купил — создать сделку</a>
+        {% elif deal %}
+        <a href="{% url 'deals:edit' deal.pk %}" class="btn btn-outline-primary w-100 mt-2">Открыть сделку</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Продавец (публичные данные)</h2>
+        <dl class="row small mb-0">
+          <dt class="col-5">Имя</dt><dd class="col-7">{{ listing.seller_name|default:"—" }}</dd>
+          <dt class="col-5">Тип</dt><dd class="col-7">{{ listing.get_seller_type_display }}</dd>
+          <dt class="col-5">На OLX</dt><dd class="col-7">{{ listing.seller_joined_text|default:"—" }}</dd>
+          <dt class="col-5">Локация</dt><dd class="col-7">{{ listing.location|default:"—" }}</dd>
+          <dt class="col-5">Доставка</dt>
+          <dd class="col-7">{% if listing.delivery_available is None %}неизвестно{% elif listing.delivery_available %}да{% else %}нет{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Связанные поиски</h2>
+        <ul class="small mb-0">
+          {% for discovery in discoveries %}
+            <li>{{ discovery.search_profile.name }} <span class="text-muted">({{ discovery.first_seen_at|date:"d.m.Y" }})</span></li>
+          {% empty %}
+            <li class="text-muted">Нет связей.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Уведомления</h2>
+        <ul class="small mb-0 list-unstyled">
+          {% for alert in alerts %}
+            <li class="py-1 border-bottom">{{ alert.event_type }} — {{ alert.status }}
+              <span class="text-muted">{{ alert.created_at|date:"d.m.Y H:i" }}</span></li>
+          {% empty %}
+            <li class="text-muted">Уведомлений не было.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6">История оценок</h2>
+        <ul class="small mb-0 list-unstyled">
+          {% for ev in evaluations %}
+          <li class="py-1 border-bottom">
+            {{ ev.created_at|date:"d.m H:i" }} · {{ ev.decision }} ·
+            {% if ev.expected_profit_uah is not None %}{{ ev.expected_profit_uah|floatformat:0 }} грн{% else %}—{% endif %}
+            <span class="text-muted">({% if ev.search_profile %}{{ ev.search_profile.name }}{% else %}профиль удален{% endif %})</span>
+          </li>
+          {% empty %}
+          <li class="text-muted">Оценок пока нет.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <a href="{% url 'listings:list' %}" class="btn btn-outline-secondary w-100 mt-3">Вернуться к списку</a>
+  </div>
+</div>
+{% endblock %}

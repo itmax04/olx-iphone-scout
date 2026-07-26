@@ -123,6 +123,29 @@ def _deterministic_facts(listing: Listing) -> dict:
     }
 
 
+def create_analysis_row(
+    listing: Listing,
+    tier: str,
+    *,
+    revision: int,
+    force_reason: str = "",
+    status: str = AiStatus.PENDING,
+) -> AiAnalysis:
+    """Create the next attempt row for a cache key."""
+    cache_filter = _cache_key_filter(listing, tier, revision)
+    last_attempt = AiAnalysis.objects.filter(**cache_filter).order_by("-attempt").first()
+    attempt = (last_attempt.attempt + 1) if last_attempt else 1
+    if attempt > 5:
+        raise AiProviderError("Достигнут предел попыток анализа.", code="AI_INVALID_OUTPUT")
+    return AiAnalysis.objects.create(
+        **cache_filter,
+        attempt=attempt,
+        force_reason=force_reason,
+        status=status,
+        started_at=timezone.now() if status == AiStatus.RUNNING else None,
+    )
+
+
 def _run_tier(
     listing: Listing, tier: str, client, *, revision: int, force_reason: str = ""
 ) -> AiAnalysis:
@@ -133,21 +156,19 @@ def _run_tier(
         return cached
 
     check_budget()
-
-    last_attempt = (
-        AiAnalysis.objects.filter(**cache_filter).order_by("-attempt").first()
+    analysis = create_analysis_row(
+        listing, tier, revision=revision, force_reason=force_reason, status=AiStatus.RUNNING
     )
-    attempt = (last_attempt.attempt + 1) if last_attempt else 1
-    if attempt > 5:
-        raise AiProviderError("Достигнут предел попыток анализа.", code="AI_INVALID_OUTPUT")
+    return execute_analysis(analysis, client)
 
-    analysis = AiAnalysis.objects.create(
-        **cache_filter,
-        attempt=attempt,
-        force_reason=force_reason,
-        status=AiStatus.RUNNING,
-        started_at=timezone.now(),
-    )
+
+def execute_analysis(analysis: AiAnalysis, client) -> AiAnalysis:
+    """Run the provider for one existing AiAnalysis row (PENDING or RUNNING)."""
+    listing = analysis.listing
+    if analysis.status == AiStatus.PENDING:
+        analysis.status = AiStatus.RUNNING
+        analysis.started_at = timezone.now()
+        analysis.save(update_fields=["status", "started_at"])
 
     user_content = build_user_content(
         title=listing.title,
@@ -155,6 +176,7 @@ def _run_tier(
         deterministic_facts=_deterministic_facts(listing),
     )
 
+    tier = analysis.tier
     invalid_retry_done = False
     while True:
         try:
@@ -179,9 +201,7 @@ def _run_tier(
                 analysis.input_tokens = (analysis.input_tokens or 0) + raw.input_tokens
                 analysis.output_tokens = (analysis.output_tokens or 0) + raw.output_tokens
                 analysis.estimated_cost_usd = (analysis.estimated_cost_usd or Decimal("0")) + cost
-                analysis.save(
-                    update_fields=["input_tokens", "output_tokens", "estimated_cost_usd"]
-                )
+                analysis.save(update_fields=["input_tokens", "output_tokens", "estimated_cost_usd"])
                 continue
             _mark_failed(
                 analysis,
@@ -351,6 +371,112 @@ def _record_budget_block(listing: Listing, message: str) -> None:
     )
     _set_listing_state(listing, AnalysisState.FAILED)
     enqueue_system_incident("AI_BUDGET_EXCEEDED", message)
+
+
+def request_reanalysis(listing: Listing, *, force: bool = False, force_reason: str = "") -> dict:
+    """Web-side queueing for POST /listings/{id}/reanalyze/.
+
+    Returns {"queued": bool, "cache_hit": bool, "analysis_id", "revision"}.
+    Never calls the provider synchronously.
+    """
+    from apps.analysis.selectors import running_analysis_exists
+
+    if running_analysis_exists(listing):
+        raise AiAlreadyRunning("Анализ уже выполняется.")
+
+    if not force:
+        cached_fast = find_cached_success(listing, AiTier.FAST, 0)
+        if cached_fast is not None:
+            cached_deep = find_cached_success(listing, AiTier.DEEP, 0)
+            final = cached_deep or cached_fast
+            _apply_to_listing(listing, final)
+            return {
+                "queued": False,
+                "cache_hit": True,
+                "analysis_id": str(final.id),
+                "revision": final.revision,
+            }
+        revision = 0
+    else:
+        if not force_reason or not (5 <= len(force_reason) <= 255):
+            raise ValueError("Для force-анализа нужна причина 5–255 символов.")
+        revision = next_revision(listing, AiTier.FAST)
+        if revision == 0 and find_cached_success(listing, AiTier.FAST, 0) is not None:
+            revision = 1
+
+    pending = create_analysis_row(
+        listing, AiTier.FAST, revision=revision, force_reason=force_reason
+    )
+    _set_listing_state(listing, AnalysisState.PENDING)
+    return {
+        "queued": True,
+        "cache_hit": False,
+        "analysis_id": str(pending.id),
+        "revision": revision,
+    }
+
+
+def process_pending_analyses(*, client=None, limit: int = 3) -> int:
+    """Worker loop: execute queued (PENDING) analyses."""
+    from apps.core.services import effective_ai
+
+    pending_rows = list(
+        AiAnalysis.objects.filter(status=AiStatus.PENDING)
+        .select_related("listing")
+        .order_by("created_at")[:limit]
+    )
+    if not pending_rows:
+        return 0
+
+    if not effective_ai():
+        for row in pending_rows:
+            _mark_failed(row, "AI_UNAVAILABLE", "AI выключен или не настроен.")
+            _set_listing_state(row.listing, AnalysisState.FAILED)
+        return 0
+
+    if client is None:
+        from apps.analysis.client import get_ai_client
+
+        try:
+            client = get_ai_client()
+        except AiProviderError:
+            return 0
+
+    from apps.core.services import get_app_state
+
+    state = get_app_state()
+    done = 0
+    for row in pending_rows:
+        listing = row.listing
+        try:
+            check_budget()
+            final = execute_analysis(row, client)
+            result = validate_ai_result(final.result)
+            escalate, _reason = should_escalate(
+                result,
+                listing,
+                escalation_confidence=state.ai_escalation_confidence,
+                high_value_profit=state.ai_high_value_profit_uah,
+            )
+            if escalate:
+                try:
+                    final = _run_tier(
+                        listing,
+                        AiTier.DEEP,
+                        client,
+                        revision=row.revision,
+                        force_reason=row.force_reason,
+                    )
+                except (AiProviderError, AiBudgetExceeded):
+                    pass
+            _apply_to_listing(listing, final)
+            done += 1
+        except AiBudgetExceeded as exc:
+            _mark_failed(row, "AI_BUDGET_EXCEEDED", str(exc))
+            _record_budget_block(listing, str(exc))
+        except AiProviderError:
+            _set_listing_state(listing, AnalysisState.FAILED)
+    return done
 
 
 def ai_spend_summary() -> dict:

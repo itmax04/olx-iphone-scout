@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Система — OLX iPhone Scout{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0">Система</h1>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'system:index' %}" class="btn btn-outline-secondary">Обновить</a>
+    <form method="post" action="{% url 'app_settings:telegram_test' %}">{% csrf_token %}
+      <input type="hidden" name="next" value="/system/">
+      <button class="btn btn-outline-primary" type="submit">Проверить Telegram</button>
+    </form>
+    <form method="post" action="{% url 'system:cleanup_preview' %}">{% csrf_token %}
+      <button class="btn btn-outline-warning" type="submit">Очистка — dry run</button>
+    </form>
+    <a href="/api/v1/system/diagnostic/" class="btn btn-outline-secondary">Скачать безопасную диагностику</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6">Приложение</h2>
+      <dl class="row small mb-0">
+        <dt class="col-6">Версия</dt><dd class="col-6">{{ data.app_version }}</dd>
+        <dt class="col-6">Commit</dt><dd class="col-6">{{ data.commit }}</dd>
+        <dt class="col-6">Окружение</dt><dd class="col-6">{{ data.app_env }}</dd>
+        <dt class="col-6">База данных</dt>
+        <dd class="col-6">{% if data.database == "ok" %}<span class="badge bg-success">OK</span>{% else %}<span class="badge bg-danger">Недоступна</span>{% endif %}</dd>
+        <dt class="col-6">Миграции</dt><dd class="col-6">{{ data.migrations|default:"—" }}</dd>
+      </dl>
+    </div></div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6">Worker</h2>
+      <dl class="row small mb-0">
+        <dt class="col-6">Статус</dt>
+        <dd class="col-6">
+          {% if data.worker_status == "HEALTHY" %}<span class="badge bg-success">Здоров</span>
+          {% elif data.worker_status == "NEVER_RUN" %}<span class="badge bg-secondary">Не запускался</span>
+          {% elif data.worker_status == "STALE" %}<span class="badge bg-warning text-dark">Отстает</span>
+          {% else %}<span class="badge bg-danger">Недоступен</span>{% endif %}
+        </dd>
+        <dt class="col-6">Heartbeat</dt><dd class="col-6">{{ data.worker_heartbeat_at|default:"—" }}</dd>
+        <dt class="col-6">Экземпляр</dt><dd class="col-6">{{ data.worker_instance|default:"—" }}</dd>
+        <dt class="col-6">Пауза</dt><dd class="col-6">{{ data.monitoring_paused|yesno:"да,нет" }}{% if data.pause_reason %} ({{ data.pause_reason }}){% endif %}</dd>
+        <dt class="col-6">Safety-блок до</dt><dd class="col-6">{{ data.safety_block_until|default:"—" }}</dd>
+        <dt class="col-6">Последний успешный скан</dt><dd class="col-6">{{ data.last_successful_scan_at|default:"—" }}</dd>
+      </dl>
+    </div></div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6">Очереди и интеграции</h2>
+      <dl class="row small mb-0">
+        <dt class="col-8">Профили с ошибками</dt><dd class="col-4">{{ data.profiles_in_error }}</dd>
+        <dt class="col-8">Outbox в ожидании</dt><dd class="col-4">{{ data.outbox_pending }}</dd>
+        <dt class="col-8">Outbox с ошибкой</dt><dd class="col-4">{{ data.outbox_failed }}</dd>
+        <dt class="col-8">OpenAI настроен</dt><dd class="col-4">{{ data.openai_configured|yesno:"да,нет" }}</dd>
+        <dt class="col-8">Telegram настроен</dt><dd class="col-4">{{ data.telegram_configured|yesno:"да,нет" }}</dd>
+        <dt class="col-8">Последняя очистка</dt><dd class="col-4">{{ data.last_cleanup_at|default:"—" }}</dd>
+      </dl>
+    </div></div>
+  </div>
+
+  <div class="col-12">
+    <div class="card"><div class="card-body">
+      <h2 class="h6">Последние события аудита</h2>
+      {% if data.recent_audit %}
+      <ul class="list-unstyled small mb-0">
+        {% for event in data.recent_audit %}
+        <li class="py-1 border-bottom d-flex justify-content-between">
+          <span>{{ event.action }} · {{ event.target_type }}</span>
+          <span class="text-muted">{{ event.created_at }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-muted mb-0">Событий пока нет.</p>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

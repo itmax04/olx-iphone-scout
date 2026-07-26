@@ -1,0 +1,126 @@
+/* OLX iPhone Scout: спокойный инструмент аналитика (§1.6) */
+
+:root {
+  --scout-bg: #F5F7FA;
+  --scout-primary: #0F2744;
+  --scout-success: #198754;
+  --scout-warning: #F59F00;
+  --scout-danger: #DC3545;
+}
+
+body {
+  background-color: var(--scout-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background-color: var(--scout-primary);
+}
+
+.app-sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link.active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.app-topbar {
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #e3e8ef;
+}
+
+.app-content {
+  max-width: 1600px;
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 39, 68, 0.08);
+}
+
+.btn {
+  min-height: 44px;
+}
+
+.btn-sm {
+  min-height: 34px;
+}
+
+.btn-primary {
+  background-color: var(--scout-primary);
+  border-color: var(--scout-primary);
+}
+
+.btn-primary:hover {
+  background-color: #1a3a5f;
+  border-color: #1a3a5f;
+}
+
+.metric-card .metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--scout-primary);
+}
+
+.badge-risk-LOW { background-color: var(--scout-success); }
+.badge-risk-MEDIUM { background-color: var(--scout-warning); color: #212529; }
+.badge-risk-HIGH { background-color: var(--scout-danger); }
+.badge-risk-UNKNOWN { background-color: #6c757d; }
+
+.status-banner-ok { background-color: #d1e7dd; color: #0f5132; }
+.status-banner-warn { background-color: #fff3cd; color: #664d03; }
+.status-banner-danger { background-color: #f8d7da; color: #842029; }
+
+.table-responsive-wrap {
+  overflow-x: auto;
+}
+
+.listing-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #e9ecef;
+}
+
+.money-profit-positive { color: var(--scout-success); font-weight: 600; }
+.money-profit-negative { color: var(--scout-danger); font-weight: 600; }
+
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline-block; }
+.htmx-request .btn-label { opacity: 0.5; }
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #4d90fe;
+  outline-offset: 1px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+  z-index: 2000;
+  background: #fff;
+  padding: 8px;
+}
+
+@media (max-width: 767.98px) {
+  .app-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

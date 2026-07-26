@@ -140,7 +140,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        **env.db_url("DATABASE_URL", default="postgresql://placeholder:placeholder@db:5432/placeholder"),
+        **env.db_url(
+            "DATABASE_URL", default="postgresql://placeholder:placeholder@db:5432/placeholder"
+        ),
         "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", default=60, minimum=0, maximum=600),
     }
 }
@@ -248,7 +250,9 @@ OLX_MIN_INTERVAL_SECONDS = env_int("OLX_MIN_INTERVAL_SECONDS", default=60, minim
 OLX_DEFAULT_INTERVAL_SECONDS = env_int(
     "OLX_DEFAULT_INTERVAL_SECONDS", default=90, minimum=60, maximum=3600
 )
-OLX_DEFAULT_JITTER_SECONDS = env_int("OLX_DEFAULT_JITTER_SECONDS", default=15, minimum=0, maximum=60)
+OLX_DEFAULT_JITTER_SECONDS = env_int(
+    "OLX_DEFAULT_JITTER_SECONDS", default=15, minimum=0, maximum=60
+)
 OLX_MAX_CARDS_PER_SCAN = env_int("OLX_MAX_CARDS_PER_SCAN", default=50, minimum=5, maximum=50)
 OLX_MAX_CONCURRENCY = env_int("OLX_MAX_CONCURRENCY", default=1, minimum=1, maximum=1)
 OLX_NAVIGATION_TIMEOUT_MS = env_int(

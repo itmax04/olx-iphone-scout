@@ -1,5 +1,9 @@
-from django.urls import path  # noqa: F401
+from django.urls import path
+
+from apps.monitoring import views
 
 app_name = "runs"
 
-urlpatterns: list = []
+urlpatterns = [
+    path("", views.run_list, name="list"),
+]

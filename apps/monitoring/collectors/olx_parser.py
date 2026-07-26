@@ -105,7 +105,9 @@ def parse_search_page(html: str, *, max_cards: int = 50) -> SearchPageResult:
             )
         )
     if not raw_cards:
-        raise LayoutChangedError("Контейнер выдачи найден, но карточки отсутствуют в ожидаемой разметке.")
+        raise LayoutChangedError(
+            "Контейнер выдачи найден, но карточки отсутствуют в ожидаемой разметке."
+        )
     return SearchPageResult(
         cards=tuple(cards), parser_version=sel.PARSER_VERSION, total_visible=len(raw_cards)
     )

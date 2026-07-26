@@ -1,0 +1,17 @@
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+  </div>
+{% endif %}
+{% if form.errors and not form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    Проверьте заполненные поля:
+    <ul class="mb-0">
+      {% for field in form %}
+        {% for error in field.errors %}
+          <li><a href="#{{ field.auto_id }}" class="alert-link">{{ field.label }}</a>: {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}

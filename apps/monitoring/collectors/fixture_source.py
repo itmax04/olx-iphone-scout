@@ -34,7 +34,9 @@ def load_fixture_html(name: str) -> str:
 class FixtureOlxSource:
     """Serves predetermined fixture pages regardless of URL."""
 
-    def __init__(self, search_fixture: str = "search_normal", detail_fixture: str = "detail_normal"):
+    def __init__(
+        self, search_fixture: str = "search_normal", detail_fixture: str = "detail_normal"
+    ):
         self.search_fixture = search_fixture
         self.detail_fixture = detail_fixture
         self.search_calls = 0

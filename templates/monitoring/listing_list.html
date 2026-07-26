@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Объявления — OLX iPhone Scout{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0">Объявления</h1>
+</div>
+
+{% if filter_error %}<div class="alert alert-warning" role="alert">{{ filter_error }}</div>{% endif %}
+
+<form method="get" class="card mb-3">
+  <div class="card-body row g-2 align-items-end">
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="f-q">Текст или OLX ID</label>
+      <input id="f-q" type="text" name="q" value="{{ request.GET.q }}" class="form-control">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-model">Модель</label>
+      <select id="f-model" name="model" class="form-select">
+        <option value="">Все</option>
+        {% for key, label in model_choices %}
+          <option value="{{ key }}" {% if request.GET.model == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-status">Статус</label>
+      <select id="f-status" name="status" class="form-select">
+        <option value="">Все</option>
+        <option value="NEW" {% if request.GET.status == "NEW" %}selected{% endif %}>Новые</option>
+        <option value="CANDIDATE" {% if request.GET.status == "CANDIDATE" %}selected{% endif %}>Кандидаты</option>
+        <option value="REVIEWED" {% if request.GET.status == "REVIEWED" %}selected{% endif %}>Просмотрено</option>
+        <option value="CONTACTED" {% if request.GET.status == "CONTACTED" %}selected{% endif %}>Связался</option>
+        <option value="REJECTED" {% if request.GET.status == "REJECTED" %}selected{% endif %}>Отклонено</option>
+        <option value="SKIPPED" {% if request.GET.status == "SKIPPED" %}selected{% endif %}>Пропущено</option>
+        <option value="BOUGHT" {% if request.GET.status == "BOUGHT" %}selected{% endif %}>Куплено</option>
+        <option value="SOLD" {% if request.GET.status == "SOLD" %}selected{% endif %}>Продано</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-sort">Сортировка</label>
+      <select id="f-sort" name="sort" class="form-select">
+        <option value="new">Новые сначала</option>
+        <option value="updated" {% if request.GET.sort == "updated" %}selected{% endif %}>Изменения</option>
+        <option value="price_asc" {% if request.GET.sort == "price_asc" %}selected{% endif %}>Цена ↑</option>
+        <option value="price_desc" {% if request.GET.sort == "price_desc" %}selected{% endif %}>Цена ↓</option>
+        <option value="profit" {% if request.GET.sort == "profit" %}selected{% endif %}>Прибыль</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-1 form-check ms-2">
+      <input class="form-check-input" type="checkbox" id="f-cand" name="candidate" value="1"
+             {% if request.GET.candidate == "1" %}checked{% endif %}>
+      <label class="form-check-label" for="f-cand">Кандидаты</label>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-outline-primary flex-fill">Применить</button>
+      <a href="{% url 'listings:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+    </div>
+  </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="card d-none d-md-block">
+  <div class="table-responsive-wrap">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Список объявлений</caption>
+      <thead>
+        <tr>
+          <th>Фото</th><th>Объявление</th><th>Цена</th><th>Прибыль</th>
+          <th>Риск</th><th>Найдено</th><th>Статус</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for listing in page_obj.object_list %}
+        <tr>
+          <td>
+            {% if listing.primary_image_url %}
+              <img class="listing-thumb" src="{{ listing.primary_image_url }}" alt=""
+                   loading="lazy" referrerpolicy="no-referrer">
+            {% else %}<div class="listing-thumb"></div>{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'listings:detail' listing.pk %}">{{ listing.title }}</a>
+            <div class="small text-muted">{{ listing.model_key|default:"—" }} · {{ listing.storage_gb|default:"?" }} GB · ID {{ listing.olx_id }}</div>
+          </td>
+          <td>{% if listing.current_price_uah %}{{ listing.current_price_uah|floatformat:0 }} грн{% else %}—{% endif %}</td>
+          <td>
+            {% if listing.current_expected_profit_uah is not None %}
+              <span class="{% if listing.current_expected_profit_uah >= 0 %}money-profit-positive{% else %}money-profit-negative{% endif %}">
+                {{ listing.current_expected_profit_uah|floatformat:0 }} грн
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td><span class="badge badge-risk-{{ listing.current_risk_level }}">{{ listing.get_current_risk_level_display }}</span></td>
+          <td class="small">{{ listing.first_seen_at|date:"d.m.Y H:i" }}</td>
+          <td><span class="badge bg-secondary">{{ listing.get_decision_status_display }}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'listings:detail' listing.pk %}">Подробнее</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{{ listing.canonical_url }}"
+                 target="_blank" rel="noopener noreferrer">OLX</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="d-md-none">
+  {% for listing in page_obj.object_list %}
+  <div class="card mb-2">
+    <div class="card-body d-flex gap-3">
+      {% if listing.primary_image_url %}
+        <img class="listing-thumb" src="{{ listing.primary_image_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      {% else %}<div class="listing-thumb flex-shrink-0"></div>{% endif %}
+      <div class="flex-grow-1">
+        <a href="{% url 'listings:detail' listing.pk %}" class="fw-semibold d-block">{{ listing.title }}</a>
+        <div class="small text-muted">
+          {% if listing.current_price_uah %}{{ listing.current_price_uah|floatformat:0 }} грн{% endif %}
+          {% if listing.current_expected_profit_uah is not None %} · прибыль {{ listing.current_expected_profit_uah|floatformat:0 }} грн{% endif %}
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'listings:detail' listing.pk %}">Подробнее</a>
+          <a class="btn btn-sm btn-outline-secondary flex-fill" href="{{ listing.canonical_url }}"
+             target="_blank" rel="noopener noreferrer">Открыть OLX</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% include "includes/pagination.html" %}
+{% else %}
+  {% if has_filters %}
+    {% include "includes/empty_state.html" with empty_title="Ничего не соответствует фильтрам" empty_text="Попробуйте сбросить фильтры." empty_action_url="/listings/" empty_action_label="Сбросить фильтры" %}
+  {% else %}
+    {% include "includes/empty_state.html" with empty_title="Объявлений пока нет" empty_text="Создайте поисковый профиль и дождитесь первого скана, либо выполните фикстурную приемку по инструкции из README." empty_action_url="/searches/new/" empty_action_label="Создать поиск" %}
+  {% endif %}
+{% endif %}
+{% endblock %}

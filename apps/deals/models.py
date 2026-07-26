@@ -57,8 +57,7 @@ class Deal(models.Model):
                 condition=models.Q(other_cost_uah__gte=0), name="deal_other_gte_0"
             ),
             models.CheckConstraint(
-                condition=models.Q(sale_price_uah__isnull=True)
-                | models.Q(sale_price_uah__gt=0),
+                condition=models.Q(sale_price_uah__isnull=True) | models.Q(sale_price_uah__gt=0),
                 name="deal_sale_price_gt_0",
             ),
         ]

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{% if profile %}Изменить поиск{% else %}Новый поиск{% endif %} — OLX iPhone Scout{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'searches:list' %}">Поиски</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if profile %}{{ profile.name }}{% else %}Новый{% endif %}</li>
+  </ol>
+</nav>
+<h1 class="h4 mb-3">{% if profile %}Изменить поиск{% else %}Новый поиск{% endif %}</h1>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        {% include "includes/field_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.name.auto_id }}">{{ form.name.label }}</label>
+            {{ form.name }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.olx_url.auto_id }}">{{ form.olx_url.label }}</label>
+            {{ form.olx_url }}
+            <details class="mt-2">
+              <summary class="text-muted small">Как получить URL</summary>
+              <div class="small text-muted mt-1">
+                Откройте olx.ua, настройте фильтры (модель, цена, «только частные»),
+                выберите сортировку «Самые новые», затем скопируйте адрес страницы
+                из адресной строки браузера и вставьте сюда.
+              </div>
+            </details>
+            <div class="mt-2 d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm"
+                      hx-post="{% url 'searches:test_url' %}"
+                      hx-include="closest form"
+                      hx-target="#url-test-result"
+                      hx-indicator="#url-test-spinner">
+                <span class="btn-label">Проверить URL</span>
+              </button>
+              <span id="url-test-spinner" class="htmx-indicator spinner-border spinner-border-sm" role="status" aria-label="Проверка"></span>
+            </div>
+            <div id="url-test-result" class="mt-2" aria-live="polite"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.target_models.auto_id }}">{{ form.target_models.label }}</label>
+              {{ form.target_models }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.target_storage_gb.auto_id }}">{{ form.target_storage_gb.label }}</label>
+              {{ form.target_storage_gb }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.min_price_uah.auto_id }}">{{ form.min_price_uah.label }}</label>
+              {{ form.min_price_uah }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.max_purchase_price_uah.auto_id }}">{{ form.max_purchase_price_uah.label }}</label>
+              {{ form.max_purchase_price_uah }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.min_expected_profit_uah.auto_id }}">{{ form.min_expected_profit_uah.label }}</label>
+              {{ form.min_expected_profit_uah }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.min_roi_percent.auto_id }}">{{ form.min_roi_percent.label }}</label>
+              {{ form.min_roi_percent }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="{{ form.interval_seconds.auto_id }}">{{ form.interval_seconds.label }}</label>
+              {{ form.interval_seconds }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="{{ form.jitter_seconds.auto_id }}">{{ form.jitter_seconds.label }}</label>
+              {{ form.jitter_seconds }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="{{ form.max_cards.auto_id }}">{{ form.max_cards.label }}</label>
+              {{ form.max_cards }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.included_keywords.auto_id }}">{{ form.included_keywords.label }}</label>
+            {{ form.included_keywords }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.excluded_keywords.auto_id }}">{{ form.excluded_keywords.label }}</label>
+            {{ form.excluded_keywords }}
+          </div>
+          <div class="form-check form-switch mb-2">
+            {{ form.is_active }}
+            <label class="form-check-label" for="{{ form.is_active.auto_id }}">{{ form.is_active.label }}</label>
+          </div>
+          <div class="form-check form-switch mb-2">
+            {{ form.private_only }}
+            <label class="form-check-label" for="{{ form.private_only.auto_id }}">{{ form.private_only.label }}</label>
+          </div>
+          <div class="form-check form-switch mb-3">
+            {{ form.delivery_required }}
+            <label class="form-check-label" for="{{ form.delivery_required.auto_id }}">{{ form.delivery_required.label }}</label>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary"><span class="btn-label">Сохранить</span></button>
+            <button type="submit" name="save_and_run" value="1" class="btn btn-outline-primary">
+              <span class="btn-label">Сохранить и запустить</span>
+            </button>
+            <a href="{% url 'searches:list' %}" class="btn btn-outline-secondary">Отмена</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% if profile %}
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6">Диагностика (только чтение)</h2>
+        <dl class="row small mb-0">
+          <dt class="col-6">Следующий запуск</dt><dd class="col-6">{{ profile.next_scan_at|date:"d.m.Y H:i" }}</dd>
+          <dt class="col-6">Последний успех</dt><dd class="col-6">{{ profile.last_success_at|date:"d.m.Y H:i"|default:"—" }}</dd>
+          <dt class="col-6">Ошибок подряд</dt><dd class="col-6">{{ profile.consecutive_failures }}</dd>
+          <dt class="col-6">Последняя ошибка</dt><dd class="col-6">{{ profile.last_error_code|default:"—" }}</dd>
+          <dt class="col-6">Блокировка до</dt><dd class="col-6">{{ profile.blocked_until|date:"d.m.Y H:i"|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

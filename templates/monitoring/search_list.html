@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Поиски — OLX iPhone Scout{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0">Поисковые профили</h1>
+  <a href="{% url 'searches:create' %}" class="btn btn-primary">Новый поиск</a>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-end">
+    <div>
+      <label class="form-label" for="filter-q">Поиск по названию</label>
+      <input type="text" id="filter-q" name="q" value="{{ request.GET.q }}" class="form-control">
+    </div>
+    <div>
+      <label class="form-label" for="filter-status">Состояние</label>
+      <select id="filter-status" name="status" class="form-select">
+        <option value="all" {% if status_filter == "all" %}selected{% endif %}>Все</option>
+        <option value="active" {% if status_filter == "active" %}selected{% endif %}>Активные</option>
+        <option value="paused" {% if status_filter == "paused" %}selected{% endif %}>На паузе</option>
+        <option value="error" {% if status_filter == "error" %}selected{% endif %}>С ошибками</option>
+        <option value="archived" {% if status_filter == "archived" %}selected{% endif %}>Архив</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-outline-primary">Применить</button>
+    <a href="{% url 'searches:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+  </div>
+</form>
+
+{% if profiles %}
+<div class="card d-none d-md-block">
+  <div class="table-responsive-wrap">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Список поисковых профилей</caption>
+      <thead>
+        <tr>
+          <th>Название</th><th>Модели</th><th>Закупка до</th><th>Мин. прибыль</th>
+          <th>Интервал</th><th>Последний успех</th><th>Следующий запуск</th>
+          <th>Состояние</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for profile in profiles %}
+        <tr>
+          <td>{{ profile.name }}</td>
+          <td class="small">{{ profile.target_models|join:", " }}<br>{{ profile.target_storage_gb|join:"/" }} GB</td>
+          <td>{{ profile.max_purchase_price_uah|floatformat:0 }} грн</td>
+          <td>{{ profile.min_expected_profit_uah|floatformat:0 }} грн</td>
+          <td>{{ profile.interval_seconds }} c</td>
+          <td>{{ profile.last_success_at|date:"d.m.Y H:i"|default:"—" }}</td>
+          <td>{{ profile.next_scan_at|date:"d.m.Y H:i" }}</td>
+          <td>
+            {% if profile.archived_at %}<span class="badge bg-secondary">Архив</span>
+            {% elif profile.consecutive_failures > 0 %}<span class="badge bg-danger">Ошибка: {{ profile.last_error_code }}</span>
+            {% elif profile.is_active %}<span class="badge bg-success">Активен</span>
+            {% else %}<span class="badge bg-warning text-dark">Пауза</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex flex-wrap gap-1">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'searches:edit' profile.pk %}">Изменить</a>
+              {% if not profile.archived_at %}
+              <form method="post" action="{% url 'searches:run' profile.pk %}">{% csrf_token %}
+                <button class="btn btn-sm btn-outline-success" type="submit">Запустить</button>
+              </form>
+              <form method="post" action="{% url 'searches:toggle' profile.pk %}">{% csrf_token %}
+                <button class="btn btn-sm btn-outline-warning" type="submit">{% if profile.is_active %}Пауза{% else %}Включить{% endif %}</button>
+              </form>
+              <form method="post" action="{% url 'searches:archive' profile.pk %}"
+                    onsubmit="return confirm('Архивировать поиск? История объявлений сохранится.');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" type="submit">Архивировать</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="d-md-none">
+  {% for profile in profiles %}
+  <div class="card mb-2">
+    <div class="card-body">
+      <div class="d-flex justify-content-between">
+        <strong>{{ profile.name }}</strong>
+        {% if profile.archived_at %}<span class="badge bg-secondary">Архив</span>
+        {% elif profile.is_active %}<span class="badge bg-success">Активен</span>
+        {% else %}<span class="badge bg-warning text-dark">Пауза</span>{% endif %}
+      </div>
+      <div class="small text-muted mt-1">
+        До {{ profile.max_purchase_price_uah|floatformat:0 }} грн ·
+        прибыль от {{ profile.min_expected_profit_uah|floatformat:0 }} грн ·
+        {{ profile.interval_seconds }} c
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'searches:edit' profile.pk %}">Изменить</a>
+        {% if not profile.archived_at %}
+        <form method="post" action="{% url 'searches:run' profile.pk %}" class="flex-fill d-grid">{% csrf_token %}
+          <button class="btn btn-sm btn-outline-success" type="submit">Запустить</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+  {% include "includes/empty_state.html" with empty_title="Поисков пока нет" empty_text="1) Откройте OLX и настройте фильтры нужной модели. 2) Включите сортировку «самые новые». 3) Скопируйте URL выдачи и вставьте его в новый поиск." empty_action_url="/searches/new/" empty_action_label="Создать первый поиск" %}
+{% endif %}
+{% endblock %}

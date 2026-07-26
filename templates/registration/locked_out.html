@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Слишком много попыток — OLX iPhone Scout{% endblock %}
+{% block anonymous_content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-6 col-lg-4 text-center">
+    <div class="card">
+      <div class="card-body p-4">
+        <h1 class="h5 mb-3">Слишком много неудачных попыток входа</h1>
+        <p class="text-muted">Вход временно заблокирован. Попробуйте снова через 15 минут.</p>
+        <a href="/accounts/login/" class="btn btn-outline-secondary">Вернуться ко входу</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

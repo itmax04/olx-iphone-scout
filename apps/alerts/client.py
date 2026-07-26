@@ -57,23 +57,17 @@ class TelegramClient:
         if url_button is not None:
             label, target = url_button
             if target.startswith("https://"):
-                payload["reply_markup"] = {
-                    "inline_keyboard": [[{"text": label, "url": target}]]
-                }
+                payload["reply_markup"] = {"inline_keyboard": [[{"text": label, "url": target}]]}
         try:
             with self._client() as client:
-                response = client.post(
-                    f"{API_BASE}/bot{self.token}/sendMessage", json=payload
-                )
+                response = client.post(f"{API_BASE}/bot{self.token}/sendMessage", json=payload)
         except httpx.HTTPError as exc:
             raise TelegramError(f"Сетевая ошибка Telegram: {type(exc).__name__}")
 
         if response.status_code == 429:
             retry_after = 30
             try:
-                retry_after = int(
-                    response.json().get("parameters", {}).get("retry_after", 30)
-                )
+                retry_after = int(response.json().get("parameters", {}).get("retry_after", 30))
             except Exception:  # pragma: no cover - malformed body
                 pass
             raise TelegramError("Telegram 429", retry_after=retry_after, status_code=429)
