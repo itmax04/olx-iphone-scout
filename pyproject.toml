@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Private OLX iPhone monitoring and resale dashboard"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "django>=5.2,<5.3",
+    "django>=5.2,<6.1",
     "djangorestframework>=3.15.2,<3.18",
     "psycopg[binary]>=3.2,<3.4",
     "django-environ>=0.11,<0.15",
