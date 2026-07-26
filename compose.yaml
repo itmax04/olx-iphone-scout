@@ -1,4 +1,7 @@
-name: olx-iphone-scout
+# Имя проекта намеренно отличается от старой первой попытки
+# (/Users/macbook/olx-iphone-scout), чтобы не пересекаться с ее
+# контейнерами и volume olx-iphone-scout_pgdata.
+name: olx-iphone-scout-2
 
 services:
   db:
